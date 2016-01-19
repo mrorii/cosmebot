@@ -37,25 +37,25 @@ class AtcosmeSpider(CrawlSpider):
         Rule(LxmlLinkExtractor(allow=(r'product/product_id/\d+/top',)),
              follow=True, callback='parse_product'),
 
-        # Review
-        # Review list for a product
-        # 'http://www.cosme.net/product/product_id/10084858/reviews'
-        # 'http://www.cosme.net/product/product_id/10084858/reviews/p/2'
-        Rule(LxmlLinkExtractor(allow=(r'product/product_id/\d+/reviews(/p/\d+)?$',)),
+        # Beautist pagination
+        # http://www.cosme.net/product/product_id/10095736/beautists
+        # http://www.cosme.net/product/product_id/10095736/beautists/page/1
+        Rule(LxmlLinkExtractor(allow=(r'product/product_id/\d+/beautists(/page/\d+)?$',)),
              follow=True),
-
-        # Review detail
-        # 'http://www.cosme.net/product/product_id/10084858/review/505170404'
-        Rule(LxmlLinkExtractor(allow=(r'product/product_id/\d+/review/\d+$',)),
-             follow=True, callback='parse_review'),
 
         # Review list for a user
         # 'http://my.cosme.net/open_entry_reviewlist/list/user_id/1359201/dst/1'
+        # 'http://my.cosme.net/open/entry/reviewlist/list/page/1/srt/0/sad/0/dst/1/user_id/1016654'
+        # 'http://my.cosme.net/open/entry/reviewlist/list/page/2/srt/0/sad/0/dst/1/user_id/1016654'
+        Rule(LxmlLinkExtractor(allow=(r'open_entry_reviewlist/list/user_id/\d+/dst/1$',)),
+             follow=True, callback='parse_reviews'),
+        Rule(LxmlLinkExtractor(allow=(r'open/entry/reviewlist/list/page/\d+/srt/0/sad/0/dst/1/user_id/\d+',)),
+             follow=True, callback='parse_reviews'),
 
         # User
         # 'http://my.cosme.net/open_top/show/user_id/1359201'
         Rule(LxmlLinkExtractor(allow=(r'open_top/show/user_id/\d+$',)),
-             follow=False, callback='parse_user'),
+             follow=True, callback='parse_user'),
 
         # Brand
         # 'http://www.cosme.net/brand/brand_id/493/top'
@@ -65,38 +65,42 @@ class AtcosmeSpider(CrawlSpider):
         # Brand -> Product Pagination
         # http://www.cosme.net/brand/brand_id/493/products
         # http://www.cosme.net/brand/brand_id/493/products/page-5
-        Rule(LxmlLinkExtractor(allow=(r'brand/brand_id/\d+/products/(page-\d+)?$',)),
+        Rule(LxmlLinkExtractor(allow=(r'brand/brand_id/\d+/products(/page-\d+)?$',)),
              follow=True),
     )
 
-    def parse_review(self, response):
-        review = Review()
+    def parse_reviews(self, response):
+        divs = response.css('div.review-sec')
+        user_id = int(re.findall(r'user_id/(\d+)', response.url)[0])
 
-        user_link = response.xpath('//div[@class="reviewer-info"]/a[1]/@href') \
-                            .extract()[0]
-        review['user_id'] = int(re.findall('user_id/(\d+)', user_link)[0])
-        review['product_id'] = int(re.findall(r'product/product_id/(\d+)',
-                                   response.url)[0])
-        review['review_id'] = int(re.findall(r'review/(\d+)', response.url)[0])
+        for div in divs:
+            review = Review()
+            review['user_id'] = user_id
+            product_link = div.css('p.item > a').xpath('@href').extract_first()
+            if product_link:
+                review['product_id'] = int(re.findall(r'product_id/(\d+)',
+                                           product_link)[0])
 
-        rating = response.css('p.reviewer-rating::text').extract()[0]
-        review['rating'] = convert_to_int_if_int(rating)
+            rating = div.css('p.reviewer-rating::text').extract_first()
+            if rating:
+                review['rating'] = convert_to_int_if_int(rating)
 
-        if response.css("p.mobile-date"):
-            date = response.css("p.mobile-date::text").extract()[0]
-        else:
-            date = response.css("p.date::text").extract()[0]
-        review['date'] = date
+            if div.css("p.mobile-date"):
+                date = div.css("p.mobile-date::text").extract_first()
+            else:
+                date = response.css("p.date::text").extract_first()
+            review['date'] = date
 
-        # FIXME: remove newline from <a>
-        review['text'] = [sentence.strip() for sentence
-                          in response.css('p.read *::text').extract()
-                          if sentence.strip()]
-        review['product_type'] = response.css("dl.item-status > dd > ul > li::text") \
-                                         .extract()
+            # FIXME: remove newline from <a>
+            review['text'] = [sentence.strip() for sentence
+                              in div.css('p.read *::text').extract()
+                              if sentence.strip()]
+            review['product_type'] = div.css("dl.item-status > dd > ul > li::text") \
+                                        .extract()
 
-        self._parse_review_tag_list(response, review)
-        yield review
+            self._parse_review_tag_list(div, review)
+
+            yield review
 
     _tag_mappings = {
         u'購入場所': 'purchase_location',
