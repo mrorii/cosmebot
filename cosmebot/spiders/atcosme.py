@@ -96,7 +96,7 @@ class AtcosmeSpider(CrawlSpider):
                                          .extract()
 
         self._parse_review_tag_list(response, review)
-        return review
+        yield review
 
     _tag_mappings = {
         u'購入場所': 'purchase_location',
@@ -174,7 +174,7 @@ class AtcosmeSpider(CrawlSpider):
         if colors:
             product['colors'] = colors
 
-        return product
+        yield product
 
     _product_count_mapping = {
         u'Like': 'like_count',
@@ -252,7 +252,7 @@ class AtcosmeSpider(CrawlSpider):
             count = re.findall('\d+', brand_count[0])
             user['favorite_brand_count'] = convert_to_int_if_int(count[0])
 
-        return user
+        yield user
 
     _personal_mappings = {
         u'肌質': 'skin_type',
@@ -314,4 +314,4 @@ class AtcosmeSpider(CrawlSpider):
             if count:
                 count = count[0].replace(u'件', '').replace(u'人', '')
                 brand[key] = convert_to_int_if_int(count)
-        return brand
+        yield brand
