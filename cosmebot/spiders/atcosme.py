@@ -159,8 +159,10 @@ class AtcosmeSpider(CrawlSpider):
 
         if colors:
             product['colors'] = colors
-            product['image_urls'] = [color['img_link'] for color in colors
-                                     if 'img_link' in color]
+
+            # Hack: replace size of image (for color detection purposes)
+            product['image_urls'] = [color['img_link'].replace('_m.jpg', '_xl.jpg')
+                                     for color in colors if 'img_link' in color]
 
     def parse_product(self, response):
         product = Product()
