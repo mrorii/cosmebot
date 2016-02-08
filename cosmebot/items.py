@@ -22,6 +22,8 @@ class Product(Item):
     categories = Field()
     ingredients = Field()  # 関心の高い成分・特徴
 
+    image_urls = Field()
+
     rating = Field()       # クチコミ評価
     point = Field()        # pt
     ranking = Field()      # ランキング

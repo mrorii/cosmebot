@@ -143,15 +143,24 @@ class AtcosmeSpider(CrawlSpider):
         lis = response.css('.color-ptn > dd ul > li')
         colors = []
         for li in lis:
-            color = {
-                'name': li.css('.color-txt::text').extract_first(),
-                'img_link': li.css('img::attr(src)').extract_first(),
-                'link': li.css('a::attr(href)').extract_first(),
-            }
+            name = li.css('.color-txt::text').extract_first()
+            img_link = li.css('img::attr(src)').extract_first()
+            link = li.css('a::attr(href)').extract_first()
+
+            color = {}
+            if name:
+                color['name'] = name
+            if img_link:
+                color['img_link'] = img_link
+            if link:
+                color['link'] = link
+
             colors.append(color)
 
         if colors:
             product['colors'] = colors
+            product['image_urls'] = [color['img_link'] for color in colors
+                                     if 'img_link' in color]
 
     def parse_product(self, response):
         product = Product()
