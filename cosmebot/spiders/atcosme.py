@@ -139,6 +139,20 @@ class AtcosmeSpider(CrawlSpider):
             if key in self._tag_mappings:
                 review[self._tag_mappings[key]] = values
 
+    def _parse_product_colors(self, response, product):
+        lis = response.css('.color-ptn > dd ul > li')
+        colors = []
+        for li in lis:
+            color = {
+                'name': li.css('.color-txt::text').extract_first(),
+                'img_link': li.css('img::attr(src)').extract_first(),
+                'link': li.css('a::attr(href)').extract_first(),
+            }
+            colors.append(color)
+
+        if colors:
+            product['colors'] = colors
+
     def parse_product(self, response):
         product = Product()
 
@@ -179,10 +193,7 @@ class AtcosmeSpider(CrawlSpider):
             product['review_count'] = convert_to_int_if_int(review_count)
 
         self._parse_product_counts(response, product)
-
-        colors = response.css('.color-ptn span.color-txt::text').extract()
-        if colors:
-            product['colors'] = colors
+        self._parse_product_colors(response, product)
 
         yield product
 
