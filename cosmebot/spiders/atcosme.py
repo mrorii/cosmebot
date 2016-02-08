@@ -76,6 +76,12 @@ class AtcosmeSpider(CrawlSpider):
         for div in divs:
             review = Review()
             review['user_id'] = user_id
+
+            user_age = div.css('dd >  ul > li.first::text').extract_first()
+            if user_age:
+                user_age = convert_to_int_if_int(user_age.replace(u'歳', ''))
+                review['user_age'] = user_age
+
             product_link = div.css('p.item > a').xpath('@href').extract_first()
             if product_link:
                 review['product_id'] = int(re.findall(r'product_id/(\d+)',

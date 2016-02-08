@@ -33,6 +33,7 @@ class Product(Item):
 
 class Review(Item):
     user_id = Field()
+    user_age = Field()
     product_id = Field()
     review_id = Field()
 
