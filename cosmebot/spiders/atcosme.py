@@ -144,6 +144,9 @@ class AtcosmeSpider(CrawlSpider):
         colors = []
         for li in lis:
             name = li.css('.color-txt::text').extract_first()
+            if not name:
+                name = li.css('::text').extract_first()
+
             img_link = li.css('img::attr(src)').extract_first()
             link = li.css('a::attr(href)').extract_first()
 
@@ -155,7 +158,8 @@ class AtcosmeSpider(CrawlSpider):
             if link:
                 color['link'] = link
 
-            colors.append(color)
+            if color:
+                colors.append(color)
 
         if colors:
             product['colors'] = colors
