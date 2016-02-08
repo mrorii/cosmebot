@@ -127,8 +127,8 @@ class AtcosmeSpider(CrawlSpider):
 
         children = response.css('div.tag-list > dl > dt,div.tag-list > dl > dd')
         for dt, dds in _group_dds(children):
-            key = dt.xpath('./text()').extract()[0]
-            values = [dd.xpath('./descendant-or-self::*/text()').extract()[0]
+            key = dt.xpath('./text()').extract_first()
+            values = [dd.xpath('./descendant-or-self::*/text()').extract_first()
                       for dd in dds]
             if key in self._tag_mappings:
                 review[self._tag_mappings[key]] = values
@@ -139,10 +139,10 @@ class AtcosmeSpider(CrawlSpider):
         product['product_id'] = int(re.findall(r'product/product_id/(\d+)/top',
                                     response.url)[0])
         product['name'] = response.css('h2.item-name > *.pdct-name > a::text') \
-                                  .extract()[0]
+                                  .extract_first()
 
-        product['maker'] = response.css('dl.maker > dd > a::text').extract()[0]
-        product['brand'] = response.css('dl.brand-name > dd > a::text').extract()[0]
+        product['maker'] = response.css('dl.maker > dd > a::text').extract_first()
+        product['brand'] = response.css('dl.brand-name > dd > a::text').extract_first()
 
         product['description'] = [
             sentence.strip() for sentence
@@ -157,7 +157,7 @@ class AtcosmeSpider(CrawlSpider):
                              for category_span in category_spans]
         ]
 
-        rating = response.xpath("//p[@itemprop='ratingValue']/text()").extract()[0]
+        rating = response.xpath("//p[@itemprop='ratingValue']/text()").extract_first()
         product['rating'] = convert_to_float_if_float(rating)
 
         point = response.css('p.point::text').extract()
@@ -207,7 +207,7 @@ class AtcosmeSpider(CrawlSpider):
     def _parse_product_rating(self, response, product):
         lis = response.css('div.rating > ul.info-rating > li')
         for li in lis:
-            key = li.css('.info-ttl::text').extract()[0]
+            key = li.css('.info-ttl::text').extract_first()
             if key not in self._product_rating_mapping:
                 continue
 
@@ -221,7 +221,7 @@ class AtcosmeSpider(CrawlSpider):
                 if category:
                     value.append(category[0])
             else:
-                value = li.css('.info-desc::text').extract()[0]
+                value = li.css('.info-desc::text').extract_first()
 
             if key == u'容量・本体価格':
                 if u'・' in value:
@@ -240,10 +240,10 @@ class AtcosmeSpider(CrawlSpider):
         user = User()
 
         user['user_id'] = int(re.findall(r'user_id/(\d+)', response.url)[0])
-        user['name'] = response.css('p.name > span::text').extract()[0]
+        user['name'] = response.css('p.name > span::text').extract_first()
 
         review_count = response.css('div#new-review > h3 > span.number::text') \
-                               .extract()[0].replace(u'件', '')
+                               .extract_first().replace(u'件', '')
         user['review_count'] = convert_to_int_if_int(review_count)
 
         user['verified'] = bool(response.css('span.ico-cmn-auth'))
@@ -274,7 +274,7 @@ class AtcosmeSpider(CrawlSpider):
             # HACK: the html structure sucks, so we have to resort to counting
             if len(values) == 1:
                 # Contained <a>
-                value = li.xpath('./a/text()').extract()[0]
+                value = li.xpath('./a/text()').extract_first()
             else:
                 # Did not contain <a>
                 value = values[1]
@@ -308,14 +308,14 @@ class AtcosmeSpider(CrawlSpider):
 
         brand['brand_id'] = int(re.findall(r'brand/brand_id/(\d+)/top',
                                 response.url)[0])
-        brand['name'] = response.css('div.title01 > h2::text').extract()[0]
-        brand['maker'] = response.css('dd.maker > a::text').extract()[0]
+        brand['name'] = response.css('div.title01 > h2::text').extract_first()
+        brand['maker'] = response.css('dd.maker > a::text').extract_first()
 
         for key, klass in (('product_count', 'productNumber'),
                            ('review_count', 'reviewNumber'),
                            ('favorite_count', 'clipNumber')):
-            count = response.css('dt.{0} + dd > a::text'.format(klass)).extract()
+            count = response.css('dt.{0} + dd > a::text'.format(klass)).extract_first()
             if count:
-                count = count[0].replace(u'件', '').replace(u'人', '')
+                count = count.replace(u'件', '').replace(u'人', '')
                 brand[key] = convert_to_int_if_int(count)
         yield brand
