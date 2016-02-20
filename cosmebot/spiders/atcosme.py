@@ -5,7 +5,7 @@ import re
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
-from cosmebot.items import Product, Review, User, Brand
+from cosmebot.items import Product, Review, User, Brand, Tag
 
 
 def convert_to_float_if_float(s):
@@ -351,3 +351,53 @@ class AtcosmeSpider(CrawlSpider):
                 count = count.replace(u'件', '').replace(u'人', '')
                 brand[key] = convert_to_int_if_int(count)
         yield brand
+
+
+class AtcosmeTagSpider(CrawlSpider):
+    name = "atcosme-tag"
+    allowed_domains = ["cosme.net"]
+    download_delay = 1.0
+
+    def __init__(self, tag_type='access', *a, **kw):
+
+        if tag_type == 'access':
+            # アクセス数順
+            tag_index = 1
+        elif tag_type == 'submit':
+            # 投稿数順
+            tag_index = 2
+        else:
+            raise Exception("Invalid tag_type: {}".format(tag_type))
+        start_url = 'http://www.cosme.net/tags/search/{0}#result'.format(tag_index)
+
+        self.start_urls = (start_url,)
+
+        self.rules = (
+            # Pagination
+            # http://www.cosme.net/tags/page/1/search/1#result
+            # http://www.cosme.net/tags/page/2/search/1#result
+            Rule(LxmlLinkExtractor(allow=r'tags/page/\d+/search/{0}#result$'.format(tag_index)),
+                 follow=True, callback='parse_tags'),
+        )
+
+        super(AtcosmeTagSpider, self).__init__(*a, **kw)
+
+    def parse_start_url(self, response):
+        for tag in self.parse_tags(response):
+            yield tag
+
+    def parse_tags(self, response):
+        if 'page' not in response.url:
+            current_page = 0
+        else:
+            current_page = int(re.findall(r'page/(\d+)', response.url)[0])
+
+        lis = response.css('div.tag-list > ul > li')
+        for i, li in enumerate(lis):
+            tag = Tag()
+
+            tag['name'] = li.css('a::text').extract_first()
+            tag['tag_url'] = li.css('a::attr(href)').extract_first()
+            tag['rank'] = current_page * 40 + i
+
+            yield tag

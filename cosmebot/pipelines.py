@@ -68,7 +68,7 @@ class UnicodeJsonLinesItemExporter(BaseItemExporter):
 
 # Shamelessly copied from http://stackoverflow.com/q/12230332
 class MultiJsonLinesItemPipeline(object):
-    save_types = ['product', 'review', 'user', 'brand']
+    save_types = ['product', 'review', 'user', 'brand', 'tag']
 
     def __init__(self):
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)

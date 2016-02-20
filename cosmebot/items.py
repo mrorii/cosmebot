@@ -83,3 +83,9 @@ class Brand(Item):
     product_count = Field()
     review_count = Field()
     favorite_count = Field()
+
+
+class Tag(Item):
+    tag_url = Field()
+    name = Field()
+    rank = Field()
